@@ -9,8 +9,6 @@ from http import HTTPStatus
 
 import telegram
 
-from telegram import Bot
-
 load_dotenv()
 
 
@@ -31,12 +29,13 @@ HOMEWORK_VERDICTS = {
 
 logging.basicConfig(
     level=logging.DEBUG,
-    filename='program.log', 
+    filename='program.log',
     format='%(asctime)s, %(levelname)s, %(message)s, %(name)s'
 )
 
+
 def check_tokens() -> bool:
-    """Проверяем наличие токенов"""
+    """Проверяем наличие токенов."""
     tokens = {
         'practicum_token': PRACTICUM_TOKEN,
         'telegram_token': TELEGRAM_TOKEN,
@@ -49,8 +48,9 @@ def check_tokens() -> bool:
     logging.info('Токены найдены')
     return True
 
+
 def send_message(bot, message):
-    """Отправляет сообщение"""
+    """Отправляет сообщение."""
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except Exception:
@@ -59,8 +59,9 @@ def send_message(bot, message):
         logging.debug('Сообщение успешно отправлено')
     pass
 
+
 def get_api_answer(timestamp):
-    """Делаем запрос на сервер"""
+    """Делаем запрос на сервер."""
     params = {'from_date': timestamp}
     try:
         response = requests.get(url=ENDPOINT, headers=HEADERS, params=params)
@@ -73,6 +74,7 @@ def get_api_answer(timestamp):
         logging.error(message)
         raise requests.exceptions.RequestException(message)
 
+
 def check_response(response):
     """Проверяем ответ API на соответствие документации."""
     if isinstance(response, dict):
@@ -82,6 +84,7 @@ def check_response(response):
             raise TypeError('Словарь homeworks возвращает не лист.')
         raise KeyError('В запросе нет словаря homeworks')
     raise TypeError('API возвращает не словарь.')
+
 
 def parse_status(homework):
     """Проверяем статус домашней работы."""
@@ -93,12 +96,14 @@ def parse_status(homework):
                     homework_status = homework.get('status')
                     if homework_status in HOMEWORK_VERDICTS:
                         verdict = HOMEWORK_VERDICTS.get(homework_status)
-                        return ('Изменился статус проверки работы 'f'"{homework_name}". {verdict}')
+                        return ('Изменился статус проверки работы '
+                                f'"{homework_name}". {verdict}')
                     else:
                         raise Exception("Неизвестный статус работы.")
             raise KeyError('В homeworks отсутствует имя домашки')
         raise KeyError('В homeworks нет ключа status.')
     raise TypeError('Лист с домашней работой возвращает не словарь.')
+
 
 def main():
     """Главная функция."""
@@ -125,7 +130,7 @@ def main():
                 message = f'Сбой в работе программы: {error}'
                 send_message(bot, message)
                 time.sleep(RETRY_PERIOD)
-                
+
 
 if __name__ == '__main__':
     main()
