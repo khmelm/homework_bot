@@ -2,6 +2,7 @@ import logging
 import os
 import requests
 import time
+import sys
 
 from dotenv import load_dotenv
 
@@ -36,32 +37,23 @@ logging.basicConfig(
 
 def check_tokens() -> bool:
     """Проверяем наличие токенов."""
-    tokens = {
-        'practicum_token': PRACTICUM_TOKEN,
-        'telegram_token': TELEGRAM_TOKEN,
-        'telegram_chat_id': TELEGRAM_CHAT_ID,
-    }
-    for key, value in tokens.items():
-        if value is None:
-            logging.critical(f'{key} отсутствует')
-            return False
-    logging.info('Токены найдены')
-    return True
+    return all((PRACTICUM_TOKEN, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID))
 
 
 def send_message(bot, message):
     """Отправляет сообщение."""
+    logging.info('Начинаем отправку сообщения')
     try:
         bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message)
     except Exception:
         logging.error('Ошибка в отправке сообщения')
     else:
         logging.debug('Сообщение успешно отправлено')
-    pass
 
-
+ 
 def get_api_answer(timestamp):
     """Делаем запрос на сервер."""
+    logging.info('Начинаем формирование запрос к API')
     params = {'from_date': timestamp}
     try:
         response = requests.get(url=ENDPOINT, headers=HEADERS, params=params)
@@ -71,65 +63,74 @@ def get_api_answer(timestamp):
         return response.json()
     except requests.exceptions.RequestException:
         message = f'Ошибка при запросе к API:{response.status_code}'
-        logging.error(message)
         raise requests.exceptions.RequestException(message)
 
 
 def check_response(response):
     """Проверяем ответ API на соответствие документации."""
-    if isinstance(response, dict):
-        if 'homeworks' in response:
-            if isinstance(response['homeworks'], list):
-                return response.get('homeworks')
-            raise TypeError('Словарь homeworks возвращает не лист.')
-        raise KeyError('В запросе нет словаря homeworks')
-    raise TypeError('API возвращает не словарь.')
+    if not isinstance(response, dict):
+        raise TypeError('API возвращает не словарь.')
+    else:
+        if not 'homeworks' in response:
+            raise KeyError('В запросе нет словаря homeworks')
+        else:
+            if not 'current_date' in response:
+                raise KeyError('В запросе нет текущей даты')
+            else:
+                hws=response['homeworks']
+                if not isinstance(hws, list):
+                    raise TypeError('Словарь homeworks возвращает не лист.')
+                else:    
+                    return response.get('homeworks')
 
 
 def parse_status(homework):
     """Проверяем статус домашней работы."""
-    if isinstance(homework, dict):
-        if 'status' in homework:
-            if 'homework_name' in homework:
-                if isinstance(homework.get('status'), str):
-                    homework_name = homework.get('homework_name')
-                    homework_status = homework.get('status')
-                    if homework_status in HOMEWORK_VERDICTS:
-                        verdict = HOMEWORK_VERDICTS.get(homework_status)
-                        return ('Изменился статус проверки работы '
-                                f'"{homework_name}". {verdict}')
-                    else:
-                        raise Exception("Неизвестный статус работы.")
-            raise KeyError('В homeworks отсутствует имя домашки')
-        raise KeyError('В homeworks нет ключа status.')
-    raise TypeError('Лист с домашней работой возвращает не словарь.')
+    homework_name = homework.get('homework_name')
+    homework_status = homework.get('status')
+    if not 'homework_name' in homework:
+        raise KeyError('В homeworks отсутствует имя домашки')
+    else:
+        if not 'status' in homework:
+            raise KeyError('В homeworks нет ключа status.')
+        else:
+            if not homework_status in HOMEWORK_VERDICTS:
+                raise KeyError('В HOMEWORK_VERDICTS нет ключа homework_status.')
+            else:
+                verdict = HOMEWORK_VERDICTS.get(homework_status)
+                return ('Изменился статус проверки работы '
+                        f'"{homework_name}". {verdict}')
 
 
 def main():
     """Главная функция."""
     logging.info('Бот запущен')
-    if check_tokens():
-        bot = telegram.Bot(token=TELEGRAM_TOKEN)
-        timestamp = int(time.time())
-        while True:
-            try:
-                """Запрос к API."""
-                response_result = get_api_answer(timestamp)
-                """Проверка ответа."""
-                homeworks = check_response(response_result)
-                logging.info("Список домашних работ получен")
-                """Если есть обновления, то отправить сообщение в Telegram."""
-                if len(homeworks) > 0:
-                    send_message(bot, parse_status(homeworks[0]))
-                    """Дата последнего обновления."""
-                    timestamp = response_result['current_date']
-                else:
-                    logging.info("Новые задания не обнаружены")
-                time.sleep(RETRY_PERIOD)
-            except Exception as error:
-                message = f'Сбой в работе программы: {error}'
-                send_message(bot, message)
-                time.sleep(RETRY_PERIOD)
+    if not check_tokens():
+        message = 'Отсутвует один или несколько токенов'
+        logging.critical(message)
+        sys.exit(message)
+    bot = telegram.Bot(token=TELEGRAM_TOKEN)
+    timestamp = int(time.time())
+    previous_message = ''
+    logging.info('Токены найдены')
+    while True:
+        try:
+            response_result = get_api_answer(timestamp)
+            homeworks = check_response(response_result)
+            logging.info("Список домашних работ получен")
+            if homeworks:
+                message = parse_status(homeworks[0])
+                timestamp = response_result['current_date']
+                if message != previous_message:
+                    send_message(bot, message)
+                    previous_message = message
+            else:
+                logging.info("Новые задания не обнаружены")
+        except Exception as error:
+            message = f'Сбой в работе программы: {error}'
+            send_message(bot, message)
+        finally:
+            time.sleep(RETRY_PERIOD)
 
 
 if __name__ == '__main__':
