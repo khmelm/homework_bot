@@ -90,8 +90,7 @@ def parse_status(homework):
     if 'status' not in homework:
         raise KeyError('В homeworks нет ключа status.')
     if homework_status not in HOMEWORK_VERDICTS:
-        raise KeyError(
-                       'В HOMEWORK_VERDICTS нет ключа homework_status.')
+        raise KeyError('В HOMEWORK_VERDICTS нет ключа status.')
     verdict = HOMEWORK_VERDICTS.get(homework_status)
     return ('Изменился статус проверки работы '
             f'"{homework_name}". {verdict}')
