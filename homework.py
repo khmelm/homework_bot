@@ -50,7 +50,7 @@ def send_message(bot, message):
     else:
         logging.debug('Сообщение успешно отправлено')
 
- 
+
 def get_api_answer(timestamp):
     """Делаем запрос на сервер."""
     logging.info('Начинаем формирование запрос к API')
@@ -71,16 +71,16 @@ def check_response(response):
     if not isinstance(response, dict):
         raise TypeError('API возвращает не словарь.')
     else:
-        if not 'homeworks' in response:
+        if 'homeworks' not in response:
             raise KeyError('В запросе нет словаря homeworks')
         else:
-            if not 'current_date' in response:
+            if 'current_date' not in response:
                 raise KeyError('В запросе нет текущей даты')
             else:
-                hws=response['homeworks']
+                hws = response['homeworks']
                 if not isinstance(hws, list):
                     raise TypeError('Словарь homeworks возвращает не лист.')
-                else:    
+                else:  
                     return response.get('homeworks')
 
 
@@ -88,14 +88,15 @@ def parse_status(homework):
     """Проверяем статус домашней работы."""
     homework_name = homework.get('homework_name')
     homework_status = homework.get('status')
-    if not 'homework_name' in homework:
+    if 'homework_name' not in homework:
         raise KeyError('В homeworks отсутствует имя домашки')
     else:
-        if not 'status' in homework:
+        if 'status' not in homework:
             raise KeyError('В homeworks нет ключа status.')
         else:
-            if not homework_status in HOMEWORK_VERDICTS:
-                raise KeyError('В HOMEWORK_VERDICTS нет ключа homework_status.')
+            if homework_status not in HOMEWORK_VERDICTS:
+                raise KeyError(
+                    'В HOMEWORK_VERDICTS нет ключа homework_status.')
             else:
                 verdict = HOMEWORK_VERDICTS.get(homework_status)
                 return ('Изменился статус проверки работы '
