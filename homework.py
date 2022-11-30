@@ -70,18 +70,15 @@ def check_response(response):
     """Проверяем ответ API на соответствие документации."""
     if not isinstance(response, dict):
         raise TypeError('API возвращает не словарь.')
+    if 'homeworks' not in response:
+        raise KeyError('В запросе нет словаря homeworks')
+    if 'current_date' not in response:
+            raise KeyError('В запросе нет текущей даты')
     else:
-        if 'homeworks' not in response:
-            raise KeyError('В запросе нет словаря homeworks')
-        else:
-            if 'current_date' not in response:
-                raise KeyError('В запросе нет текущей даты')
-            else:
-                hws = response['homeworks']
-                if not isinstance(hws, list):
-                    raise TypeError('Словарь homeworks возвращает не лист.')
-                else:
-                    return response.get('homeworks')
+        homeworks = response['homeworks']
+        if not isinstance(homeworks, list):
+            raise TypeError('Словарь homeworks возвращает не лист.')
+        return response.get('homeworks')
 
 
 def parse_status(homework):
@@ -90,17 +87,14 @@ def parse_status(homework):
     homework_status = homework.get('status')
     if 'homework_name' not in homework:
         raise KeyError('В homeworks отсутствует имя домашки')
-    else:
-        if 'status' not in homework:
-            raise KeyError('В homeworks нет ключа status.')
-        else:
-            if homework_status not in HOMEWORK_VERDICTS:
-                raise KeyError(
-                    'В HOMEWORK_VERDICTS нет ключа homework_status.')
-            else:
-                verdict = HOMEWORK_VERDICTS.get(homework_status)
-                return ('Изменился статус проверки работы '
-                        f'"{homework_name}". {verdict}')
+    if 'status' not in homework:
+        raise KeyError('В homeworks нет ключа status.')
+    if homework_status not in HOMEWORK_VERDICTS:
+        raise KeyError(
+                'В HOMEWORK_VERDICTS нет ключа homework_status.')
+    verdict = HOMEWORK_VERDICTS.get(homework_status)
+    return ('Изменился статус проверки работы '
+            f'"{homework_name}". {verdict}')
 
 
 def main():
