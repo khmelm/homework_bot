@@ -73,7 +73,7 @@ def check_response(response):
     if 'homeworks' not in response:
         raise KeyError('В запросе нет словаря homeworks')
     if 'current_date' not in response:
-            raise KeyError('В запросе нет текущей даты')
+        raise KeyError('В запросе нет текущей даты')
     else:
         homeworks = response['homeworks']
         if not isinstance(homeworks, list):
@@ -91,7 +91,7 @@ def parse_status(homework):
         raise KeyError('В homeworks нет ключа status.')
     if homework_status not in HOMEWORK_VERDICTS:
         raise KeyError(
-                'В HOMEWORK_VERDICTS нет ключа homework_status.')
+                       'В HOMEWORK_VERDICTS нет ключа homework_status.')
     verdict = HOMEWORK_VERDICTS.get(homework_status)
     return ('Изменился статус проверки работы '
             f'"{homework_name}". {verdict}')
