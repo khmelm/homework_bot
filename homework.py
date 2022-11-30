@@ -80,7 +80,7 @@ def check_response(response):
                 hws = response['homeworks']
                 if not isinstance(hws, list):
                     raise TypeError('Словарь homeworks возвращает не лист.')
-                else:  
+                else:
                     return response.get('homeworks')
 
 
