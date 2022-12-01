@@ -74,11 +74,10 @@ def check_response(response):
         raise KeyError('В запросе нет словаря homeworks')
     if 'current_date' not in response:
         raise KeyError('В запросе нет текущей даты')
-    else:
-        homeworks = response['homeworks']
-        if not isinstance(homeworks, list):
-            raise TypeError('Словарь homeworks возвращает не лист.')
-        return response.get('homeworks')
+    homeworks = response['homeworks']
+    if not isinstance(homeworks, list):
+        raise TypeError('Словарь homeworks возвращает не лист.')
+    return response.get('homeworks')
 
 
 def parse_status(homework):
